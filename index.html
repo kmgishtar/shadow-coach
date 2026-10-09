@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e0f13">
+<title>個室10分シャドー｜Shadow Coach</title>
+<style>
+:root{
+  --bg:#0e0f13;--panel:#16181f;--panel2:#1d2029;--line:#2a2e3a;
+  --text:#e9e6df;--muted:#9a9789;--gold:#c9a96e;--gold2:#e6cf9f;--rest:#6f9fb8;--warn:#d9805f;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body{padding:env(safe-area-inset-top) 0 calc(96px + env(safe-area-inset-bottom))}
+.wrap{max-width:560px;margin:0 auto;padding:16px 16px 0}
+header{display:flex;align-items:baseline;justify-content:space-between;margin:4px 2px 12px}
+header h1{font-size:15px;letter-spacing:.18em;font-weight:600;margin:0;color:var(--gold2)}
+header span{font-size:11px;color:var(--muted);letter-spacing:.08em}
+/* timer card */
+.timer{background:linear-gradient(160deg,#1a1c24,#13151b);border:1px solid var(--line);border-radius:18px;padding:18px 18px 14px;position:relative;overflow:hidden}
+.timer::after{content:"";position:absolute;inset:0;border-radius:18px;pointer-events:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+.partno{font-size:11px;letter-spacing:.2em;color:var(--gold)}
+.partname{font-size:20px;font-weight:600;margin:4px 0 2px;line-height:1.35}
+.parttime{font-size:12px;color:var(--muted)}
+.clock{display:flex;align-items:flex-end;justify-content:space-between;margin-top:10px}
+.big{font-variant-numeric:tabular-nums;font-size:64px;font-weight:300;letter-spacing:.02em;line-height:1}
+.big.warn{color:var(--warn)}
+.side{text-align:right;font-size:12px;color:var(--muted);line-height:1.6}
+.side b{display:block;font-size:20px;color:var(--text);font-weight:500;font-variant-numeric:tabular-nums}
+.interval{margin-top:12px;display:none;align-items:center;gap:10px}
+.interval.on{display:flex}
+.pill{font-size:12px;font-weight:600;letter-spacing:.12em;padding:5px 12px;border-radius:999px;border:1px solid}
+.pill.work{color:var(--gold2);border-color:var(--gold);background:rgba(201,169,110,.1)}
+.pill.rest{color:#bfe0f0;border-color:var(--rest);background:rgba(111,159,184,.12)}
+.dots{display:flex;gap:6px}
+.dots i{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.dots i.done{background:var(--gold)}
+.dots i.cur{background:var(--gold2);box-shadow:0 0 0 3px rgba(230,207,159,.18)}
+/* overall bar */
+.bar{margin-top:14px;height:6px;border-radius:6px;background:#0b0c10;display:flex;gap:2px;overflow:hidden}
+.seg{position:relative;background:#252833;height:100%}
+.seg>u{position:absolute;inset:0;width:0;background:linear-gradient(90deg,var(--gold),var(--gold2))}
+.barlbl{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums}
+/* video */
+.video{margin-top:14px;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#000;aspect-ratio:16/9;position:relative}
+.video #player,.video iframe{position:absolute;inset:0;width:100%;height:100%}
+.vmeta{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 2px 0;font-size:12px;color:var(--muted)}
+.vmeta .seg-t{font-variant-numeric:tabular-nums;color:var(--gold)}
+.vbtns{display:flex;gap:6px;flex-shrink:0}
+.chip{font:inherit;font-size:11px;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:5px 10px;cursor:pointer}
+.chip.on{border-color:var(--gold);color:var(--gold2)}
+/* coaching */
+.card{margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;grid-template-columns:1fr 112px;gap:14px;align-items:center}
+.card h2{font-size:11px;letter-spacing:.2em;color:var(--gold);margin:0 0 8px;font-weight:600}
+.card ol{margin:0;padding-left:1.2em;font-size:14px;line-height:1.65}
+.card li::marker{color:var(--gold)}
+.card svg{width:112px;height:112px}
+.credit{margin-top:10px;font-size:11.5px;color:var(--muted);line-height:1.6;padding:0 2px}
+.credit a{color:var(--gold2);text-decoration:none;border-bottom:1px solid rgba(230,207,159,.3)}
+/* list */
+.list{margin-top:18px;border-top:1px solid var(--line)}
+.row{display:flex;gap:12px;padding:12px 2px;border-bottom:1px solid var(--line);font-size:13px;cursor:pointer}
+.row .t{width:84px;flex-shrink:0;color:var(--muted);font-variant-numeric:tabular-nums}
+.row.cur{color:var(--gold2)}.row.cur .t{color:var(--gold)}
+.row.done{opacity:.45}
+.note{font-size:11px;color:var(--muted);line-height:1.7;margin:16px 2px 24px}
+/* controls */
+.controls{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,rgba(14,15,19,0),rgba(14,15,19,.92) 30%);display:flex;justify-content:center;gap:12px}
+.controls button{font:inherit;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:14px;height:54px;min-width:76px;font-size:14px;letter-spacing:.06em;cursor:pointer}
+.controls #btnMain{flex:1;max-width:240px;background:linear-gradient(160deg,#d6b77c,#a88a52);color:#17140e;border:none;font-weight:700;letter-spacing:.14em}
+.controls #btnMain.pause{background:var(--panel2);color:var(--gold2);border:1px solid var(--gold)}
+@media (min-width:720px){.big{font-size:76px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>SHADOW&nbsp;COACH</h1><span>個室10分・回し蹴りなし</span></header>
+
+  <section class="timer" aria-live="polite">
+    <div class="partno" id="partNo">PART 1 / 6</div>
+    <div class="partname" id="partName">—</div>
+    <div class="parttime" id="partRange">—</div>
+    <div class="clock">
+      <div class="big" id="big">1:00</div>
+      <div class="side">残り合計<b id="total">10:00</b></div>
+    </div>
+    <div class="interval" id="interval">
+      <span class="pill work" id="pill">動く</span>
+      <div class="dots" id="dots"></div>
+      <span style="font-size:12px;color:var(--muted)" id="ivText"></span>
+    </div>
+    <div class="bar" id="bar"></div>
+    <div class="barlbl"><span>0:00</span><span>5:00</span><span>10:00</span></div>
+  </section>
+
+  <div class="video"><div id="player"></div></div>
+  <div class="vmeta">
+    <span>お手本 <span class="seg-t" id="segT">—</span>（ループ）</span>
+    <span class="vbtns">
+      <button class="chip" id="btnAlt" hidden>別の動画</button>
+      <button class="chip" id="btnSound">🔇 音を出す</button>
+    </span>
+  </div>
+
+  <section class="card">
+    <div>
+      <h2>意識するポイント</h2>
+      <ol id="cues"></ol>
+    </div>
+    <div id="fig" aria-hidden="true"></div>
+  </section>
+  <div class="credit" id="credit"></div>
+
+  <div class="list" id="list"></div>
+
+  <p class="note">
+    動画はYouTube公式の埋め込みプレーヤー（youtube-nocookie.com）で再生し、各チャンネルの動画をそのまま表示しています。
+    秒数は字幕・書き起こしのタイムスタンプから選びました（推測の区間はソースコメントに明記）。
+    ビープは切り替えの3秒前から鳴ります。初回は「開始」を押すと音とお手本の再生が始まります。
+  </p>
+</div>
+
+<nav class="controls">
+  <button id="btnReset" aria-label="最初から">↺</button>
+  <button id="btnMain">開始</button>
+  <button id="btnSkip" aria-label="次へ">次へ ›</button>
+</nav>
+
+<script>
+/* =====================================================================
+   お手本区間（start/end 秒）は youtube-transcript-api で取得した字幕の
+   タイムスタンプから特定。2026-10-09 に oEmbed=200 & playableInEmbed=true を確認。
+   ===================================================================== */
+const V = {
+  tony:   {id:'WBCcDNI5OpY', title:'How to Breathe Properly in Boxing and Stay Relaxed', ch:'Tony Jeffries'},
+  suzuki: {id:'in1gLXeIPUQ', title:'脱力ってよく聞くけど、どこの力を抜いたらいいのか？力を抜いても効かすパンチを打てる方法', ch:'すずきけんいちろう'},
+  shishido:{id:'5AuQ29_PwbM', title:'左ミドルキックが、右ミドルキックよりも得意になってしまう方法！', ch:'宍戸祐太《タイ国政府公認トレーナー》'},
+  liam:   {id:'saN1yQqFdx8', title:'HOW To SWITCH KICK | By Liam Harrison | Full Breakdown', ch:'Liam Harrison'},
+  struggle:{id:'Hv_HRR81QWo', title:'誰でもできる【ミドルキック連打】ポイントは軸と蹴り始め', ch:'STRUGGLE / ムエタイ&キックボクシングジム ストラッグル（鈴木秀明）'},
+  suga:   {id:'ocOpbQA2wx4', title:'【キックボクシング】超わかりやすい！キック連打のコツ', ch:'スガチャンネル（菅原勇介）'},
+};
+
+const PARTS = [
+  { name:'その場で跳ねる・肩をストン', dur:60,
+    clips:[
+      // 確認済み: 字幕 130.5s「手を下げた状態でシャドーを始め…」〜 179.6s「好きなだけ続けて構いません」
+      //   手を下げたフットワーク → 手を上げて動くだけ、の実演区間
+      {v:'tony', s:131, e:180},
+      // 確認済み: 字幕 140.9s〜162.4s「上に上げて下ろす感じで肩の力抜く」構えの作り方
+      {v:'suzuki', s:140, e:163},
+    ],
+    cues:['かかとを浮かせて小さく弾む（床を鳴らさない）','肩を一度すくめて、ストンと落とす×3','手は下げたまま、鼻から吸って口から吐く'],
+    fig:'shoulder' },
+  { name:'その場ジャブ・ワンツー（50〜70%・脱力）', dur:120,
+    clips:[
+      // 確認済み: 字幕 179.6s「単発のジャブを打ちながら息を吐き…50〜80%」〜 219.4s ヘッドムーブ追加直前
+      {v:'tony', s:180, e:219},
+      // 確認済み: 字幕 58.8s〜100.5s「拳を握らない…当たる時だけ固める」
+      {v:'suzuki', s:59, e:101},
+    ],
+    cues:['拳は軽く開き、伸び切る瞬間だけ固める','1発ごとに「シュッ」と吐く','打ったら即ガードへ。肩は上げない'],
+    fig:'fist' },
+  { name:'左ミドルのスイッチ ×20（蹴らない）', dur:120,
+    clips:[
+      // 確認済み: 字幕 778.0s「ステップ2…右足に体重が乗った時にまず左足を後ろに」〜
+      //   815.8s「左足の指先はまっすぐ／右足は斜め45°」〜 863.2s ステップ3「リズムを取ってスイッチキック」
+      {v:'shishido', s:778, e:864},
+      // 確認済み: 字幕 27.2s「右足を少し外へ」〜 47.6s「幅は狭く、つま先で」〜 81.3s ゆっくり再実演
+      //   ※この動画はキックまで蹴るので、個室ではスイッチ部分だけ真似る
+      {v:'liam', s:27, e:88},
+    ],
+    cues:['右足に体重→左足を少し後ろへ（つま先は正面）','左足が着く直前に右足を斜め45°へ踏む','ジャンプしない。頭の高さを変えず、幅は狭く'],
+    fig:'feet' },
+  { name:'スイッチ → 膝上げ 左右 ×10', dur:90,
+    clips:[
+      // 確認済み: 字幕 51.5s「まず右足をちょっと上げます」〜 112.0s「軸足の上に頭」
+      //   足を上げて下ろす瞬間に反対の足へ踏み替える分解ステップの実演
+      {v:'struggle', s:51, e:121},
+    ],
+    cues:['膝は高く上げて止める（回し蹴りはしない）','頭は軸足の真上、軸膝はほぼまっすぐ','上げた膝と反対の腕を振ってバランス'],
+    fig:'knee' },
+  { name:'片足縄跳びリズム（20秒動く／10秒休む ×4）', dur:120, interval:{work:20, rest:10, sets:4},
+    clips:[
+      // 確認済み: 字幕 199.9s「縄跳びを…」〜 232.8s「これを片足で跳ぶ」〜 263.3s「テンポを早く、手の振りも」〜 284.1s
+      {v:'suga', s:200, e:285},
+    ],
+    cues:['縄跳びの片足リズムで踏み替え、両腕を振る','頭の高さを固定・脇を締める','休む10秒は鼻から吸って長く吐く'],
+    fig:'rhythm' },
+  { name:'脱力パンチ → クールダウン', dur:90,
+    clips:[
+      // 推測: 字幕 164.4s「ナギト君に構えてください、いきます」の後、167.6s〜194.5s は[音楽]のみ。
+      //   話の流れから実演区間と判断。headless で 180s 時点の静止画1枚に打っている人物を確認したのみ（通しで目視はしていない）。194.5s〜211.9s は実演後のまとめ。
+      {v:'suzuki', s:164, e:212},
+      // 確認済み: 字幕 229.0s「徐々に強度を上げて…リラックスを維持」〜 242.8s
+      {v:'tony', s:229, e:244},
+    ],
+    cues:['前半45秒：力を抜いたままワンツーを流す','後半：歩きながら4秒吸って6秒吐く','肩甲骨をゆっくり回して終了'],
+    fig:'breath' },
+];
+
+/* ---------- SVG figures ---------- */
+const G='#c9a96e', G2='#e6cf9f', M='#5b5f6d', R='#6f9fb8';
+const FIG = {
+shoulder:`<svg viewBox="0 0 112 112"><circle cx="56" cy="26" r="11" fill="none" stroke="${G2}" stroke-width="2"/>
+<path d="M28 52 Q56 40 84 52" fill="none" stroke="${M}" stroke-width="2" stroke-dasharray="3 3"/>
+<path d="M28 60 Q56 50 84 60" fill="none" stroke="${G}" stroke-width="3" stroke-linecap="round"/>
+<path d="M56 38 V86 M40 104 L56 86 L72 104" fill="none" stroke="${G2}" stroke-width="2" stroke-linecap="round"/>
+<path d="M22 42 v12 m-4 -4 l4 4 4-4 M90 42 v12 m-4 -4 l4 4 4-4" stroke="${G}" stroke-width="2" fill="none" stroke-linecap="round"/>
+<text x="56" y="76" fill="${M}" font-size="8" text-anchor="middle">肩ストン</text></svg>`,
+fist:`<svg viewBox="0 0 112 112"><rect x="10" y="40" width="30" height="28" rx="8" fill="none" stroke="${M}" stroke-width="2" stroke-dasharray="3 3"/>
+<text x="25" y="82" fill="${M}" font-size="8" text-anchor="middle">移動中:ゆるく</text>
+<path d="M44 54 H70" stroke="${G}" stroke-width="2"/><path d="M66 49 l6 5 -6 5" fill="none" stroke="${G}" stroke-width="2"/>
+<rect x="74" y="42" width="28" height="24" rx="6" fill="${G}" opacity=".9"/>
+<text x="88" y="82" fill="${G2}" font-size="8" text-anchor="middle">当たる瞬間だけ</text>
+<text x="56" y="28" fill="${G2}" font-size="9" text-anchor="middle">シュッ（吐く）</text></svg>`,
+feet:`<svg viewBox="0 0 112 112"><text x="56" y="10" fill="${M}" font-size="8" text-anchor="middle">↑ 相手</text>
+<g opacity=".35"><ellipse cx="44" cy="34" rx="7" ry="14" fill="none" stroke="${M}" stroke-width="2"/><ellipse cx="66" cy="76" rx="7" ry="14" fill="none" stroke="${M}" stroke-width="2" transform="rotate(30 66 76)"/></g>
+<ellipse cx="42" cy="62" rx="7" ry="14" fill="none" stroke="${G2}" stroke-width="2.5"/>
+<text x="42" y="88" fill="${G2}" font-size="8" text-anchor="middle">左:正面</text>
+<ellipse cx="74" cy="46" rx="7" ry="14" fill="none" stroke="${G}" stroke-width="2.5" transform="rotate(45 74 46)"/>
+<text x="88" y="70" fill="${G}" font-size="8" text-anchor="middle">右:45°</text>
+<path d="M44 40 Q38 50 42 56" fill="none" stroke="${R}" stroke-width="1.5" stroke-dasharray="2 2"/>
+<text x="56" y="106" fill="${M}" font-size="8" text-anchor="middle">点線=元の構え</text></svg>`,
+knee:`<svg viewBox="0 0 112 112"><path d="M56 8 V106" stroke="${R}" stroke-width="1.5" stroke-dasharray="3 3"/>
+<circle cx="56" cy="20" r="9" fill="none" stroke="${G2}" stroke-width="2"/>
+<path d="M56 29 V62 L56 102" stroke="${G2}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+<path d="M56 62 L80 56 L78 82" stroke="${G}" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M56 38 L36 50 L40 32 M56 38 L72 46" stroke="${G2}" stroke-width="2" fill="none" stroke-linecap="round"/>
+<text x="20" y="104" fill="${R}" font-size="8">軸</text><text x="84" y="50" fill="${G}" font-size="8">膝↑</text></svg>`,
+rhythm:`<svg viewBox="0 0 112 112">${[0,1,2,3].map(i=>`<rect x="${8+i*25}" y="40" width="16" height="24" rx="3" fill="${G}"/><rect x="${24+i*25}" y="52" width="7" height="12" rx="2" fill="${R}"/>`).join('')}
+<text x="56" y="30" fill="${G2}" font-size="9" text-anchor="middle">20秒 動く / 10秒 休む</text>
+<path d="M18 86 q6 -10 12 0 q6 10 12 0 q6 -10 12 0 q6 10 12 0 q6 -10 12 0 q6 10 12 0" fill="none" stroke="${G2}" stroke-width="2"/>
+<text x="56" y="104" fill="${M}" font-size="8" text-anchor="middle">頭の高さは一定</text></svg>`,
+breath:`<svg viewBox="0 0 112 112"><circle cx="56" cy="56" r="34" fill="none" stroke="${M}" stroke-width="1.5"/>
+<path d="M56 22 A34 34 0 0 1 88 66" fill="none" stroke="${R}" stroke-width="5" stroke-linecap="round"/>
+<path d="M88 66 A34 34 0 1 1 56 22" fill="none" stroke="${G}" stroke-width="5" stroke-linecap="round"/>
+<text x="92" y="36" fill="${R}" font-size="9">吸4</text><text x="14" y="98" fill="${G}" font-size="9">吐6</text>
+<text x="56" y="60" fill="${G2}" font-size="11" text-anchor="middle">呼吸</text></svg>`,
+};
+
+/* ---------- state ---------- */
+const TOTAL = PARTS.reduce((a,p)=>a+p.dur,0);
+const OFFS = PARTS.map((p,i)=>PARTS.slice(0,i).reduce((a,q)=>a+q.dur,0));
+let idx=0, elapsedInPart=0, running=false, lastTs=0, clipIdx=0, muted=true, lastBeepSec=null;
+let player=null, playerReady=false, curClip=null;
+
+const $=id=>document.getElementById(id);
+const fmt=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+
+/* ---------- build static UI ---------- */
+$('bar').innerHTML = PARTS.map(p=>`<div class="seg" style="flex:${p.dur}"><u></u></div>`).join('');
+$('list').innerHTML = PARTS.map((p,i)=>`<div class="row" data-i="${i}"><span class="t">${fmt(OFFS[i])}–${fmt(OFFS[i]+p.dur)}</span><span>${p.name}</span></div>`).join('');
+document.querySelectorAll('.row').forEach(r=>r.onclick=()=>{goPart(+r.dataset.i)});
+
+/* ---------- audio ---------- */
+let actx=null;
+function initAudio(){ if(!actx){ try{actx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){} } if(actx&&actx.state==='suspended') actx.resume(); }
+function beep(freq=880, dur=.12, vol=.25){
+  if(!actx) return; const o=actx.createOscillator(), g=actx.createGain();
+  o.type='sine'; o.frequency.value=freq; o.connect(g); g.connect(actx.destination);
+  const t=actx.currentTime; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.start(t); o.stop(t+dur+.02);
+}
+
+/* ---------- interval helper (part 5) ---------- */
+function intervalState(p, t){
+  const {work,rest,sets}=p.interval, cyc=work+rest;
+  const set=Math.min(sets-1, Math.floor(t/cyc)), inC=t-set*cyc;
+  const isWork=inC<work; const remain=isWork?work-inC:cyc-inC;
+  return {set, isWork, remain};
+}
+
+/* ---------- render ---------- */
+function render(){
+  const p=PARTS[idx]; const left=p.dur-elapsedInPart;
+  $('partNo').textContent=`PART ${idx+1} / ${PARTS.length}`;
+  $('partName').textContent=p.name;
+  $('partRange').textContent=`${fmt(OFFS[idx])} – ${fmt(OFFS[idx]+p.dur)}`;
+  $('big').textContent=fmt(left);
+  $('total').textContent=fmt(TOTAL-OFFS[idx]-elapsedInPart);
+  let soon = left<=3.0;
+  if(p.interval){
+    const st=intervalState(p, elapsedInPart);
+    $('interval').classList.add('on');
+    $('pill').textContent=st.isWork?'動く':'休む'; $('pill').className='pill '+(st.isWork?'work':'rest');
+    $('ivText').textContent=`${st.set+1}/${p.interval.sets}セット・あと${Math.ceil(st.remain)}秒`;
+    $('dots').innerHTML=Array.from({length:p.interval.sets},(_,k)=>`<i class="${k<st.set?'done':k===st.set?'cur':''}"></i>`).join('');
+    if(st.remain<=3) soon=true;
+  } else $('interval').classList.remove('on');
+  $('big').classList.toggle('warn', soon && running);
+  document.querySelectorAll('.seg>u').forEach((u,i)=>{u.style.width=(i<idx?100:i>idx?0:elapsedInPart/PARTS[i].dur*100)+'%'});
+  document.querySelectorAll('.row').forEach((r,i)=>{r.classList.toggle('cur',i===idx);r.classList.toggle('done',i<idx)});
+}
+function renderPartStatic(){
+  const p=PARTS[idx];
+  $('cues').innerHTML=p.cues.map(c=>`<li>${c}</li>`).join('');
+  $('fig').innerHTML=FIG[p.fig];
+  const c=p.clips[clipIdx], v=V[c.v];
+  $('segT').textContent=`${fmt(c.s)}–${fmt(c.e)}`;
+  $('btnAlt').hidden=p.clips.length<2;
+  $('credit').innerHTML=`お手本：<a href="https://www.youtube.com/watch?v=${v.id}&t=${c.s}s" target="_blank" rel="noopener">${v.title}</a> ／ ${v.ch}（YouTube）`;
+}
+
+/* ---------- beeps ---------- */
+function handleBeeps(){
+  const p=PARTS[idx]; let remain=p.dur-elapsedInPart;
+  if(p.interval){ const st=intervalState(p,elapsedInPart); remain=Math.min(remain, st.remain); }
+  const sec=Math.ceil(remain);
+  if(sec<=3 && sec>=1 && sec!==lastBeepSec){ lastBeepSec=sec; beep(660,.1); }
+  if(sec>3) lastBeepSec=null;
+}
+
+/* ---------- loop ---------- */
+function tick(ts){
+  if(!running) return;
+  const dt=Math.min(.5,(ts-lastTs)/1000); lastTs=ts;
+  const p=PARTS[idx];
+  const prevIv = p.interval ? intervalState(p,elapsedInPart) : null;
+  elapsedInPart+=dt;
+  if(p.interval && elapsedInPart<p.dur){
+    const st=intervalState(p,elapsedInPart);
+    if(st.isWork!==prevIv.isWork || st.set!==prevIv.set){ beep(st.isWork?1046:523,.35,.3); lastBeepSec=null; }
+  }
+  if(elapsedInPart>=p.dur){
+    if(idx<PARTS.length-1){ beep(1046,.35,.3); goPart(idx+1,true); }
+    else { finish(); return; }
+  } else handleBeeps();
+  render(); requestAnimationFrame(tick);
+}
+function goPart(i, keepRunning){
+  idx=i; elapsedInPart=0; clipIdx=0; lastBeepSec=null;
+  renderPartStatic(); render(); loadClip(running||keepRunning);
+}
+function finish(){
+  running=false; elapsedInPart=PARTS[idx].dur; render();
+  beep(784,.2); setTimeout(()=>beep(988,.2),220); setTimeout(()=>beep(1318,.5),440);
+  $('btnMain').textContent='完了'; $('btnMain').classList.remove('pause');
+  $('partName').textContent='おつかれさまでした'; if(playerReady) player.pauseVideo();
+}
+
+/* ---------- YouTube IFrame Player API ---------- */
+function onYouTubeIframeAPIReady(){
+  const c=PARTS[0].clips[0];
+  player=new YT.Player('player',{
+    host:'https://www.youtube-nocookie.com',
+    videoId:V[c.v].id,
+    playerVars:{start:c.s,end:c.e,mute:1,playsinline:1,rel:0,modestbranding:1,controls:1},
+    events:{
+      onReady:()=>{playerReady=true; player.mute();},
+      onStateChange:e=>{ if(e.data===YT.PlayerState.ENDED && curClip){ player.seekTo(curClip.s,true); player.playVideo(); } }
+    }
+  });
+}
+window.onYouTubeIframeAPIReady=onYouTubeIframeAPIReady;
+function loadClip(autoplay){
+  const c=PARTS[idx].clips[clipIdx]; curClip=c;
+  if(!playerReady) return;
+  const opts={videoId:V[c.v].id,startSeconds:c.s,endSeconds:c.e};
+  muted?player.mute():player.unMute();
+  autoplay?player.loadVideoById(opts):player.cueVideoById(opts);
+}
+// 保険：endSeconds を越えたら先頭へ（ENDED が来ない環境向け）
+setInterval(()=>{ if(playerReady&&curClip&&player.getCurrentTime){ const t=player.getCurrentTime(); if(t>curClip.e+0.3||(t>0&&t<curClip.s-2)){player.seekTo(curClip.s,true);} } },500);
+
+/* ---------- controls ---------- */
+$('btnMain').onclick=()=>{
+  initAudio();
+  if($('btnMain').textContent==='完了'){ reset(); return; }
+  running=!running;
+  $('btnMain').textContent=running?'一時停止':'再開'; $('btnMain').classList.toggle('pause',running);
+  if(running){ lastTs=performance.now(); requestAnimationFrame(tick);
+    if(playerReady){ if(curClip && player.getVideoData && player.getVideoData().video_id===V[curClip.v].id) player.playVideo(); else loadClip(true);} }
+  else if(playerReady) player.pauseVideo();
+  render();
+};
+$('btnSkip').onclick=()=>{ initAudio(); if(idx<PARTS.length-1) goPart(idx+1); else finish(); };
+$('btnReset').onclick=reset;
+function reset(){ running=false; $('btnMain').textContent='開始'; $('btnMain').classList.remove('pause'); goPart(0); if(playerReady) player.pauseVideo(); }
+$('btnAlt').onclick=()=>{ const p=PARTS[idx]; clipIdx=(clipIdx+1)%p.clips.length; renderPartStatic(); loadClip(true); $('btnAlt').classList.toggle('on',clipIdx>0); };
+$('btnSound').onclick=()=>{ muted=!muted; if(playerReady) muted?player.mute():player.unMute(); $('btnSound').textContent=muted?'🔇 音を出す':'🔊 消音'; $('btnSound').classList.toggle('on',!muted); };
+
+goPart(0);
+</script>
+<script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>
